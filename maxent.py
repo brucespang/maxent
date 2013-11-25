@@ -35,20 +35,32 @@ class MaxEnt:
 
     def likelihood(self, weights, c, d):
         actuals = exp(self.feature_sum(weights, c, d))
+        print "actuals:", actuals
         expecteds = sum([exp(self.feature_sum(weights, c=k, d=d)) for k in self.classes])
-        return float(actuals)/float(expecteds)
+        print "expecteds:", expecteds
+        l = float(actuals)/float(expecteds)
+        print "likelihood:", l
+        return l
 
     def log_likelihood(self, weights, data):
-        return sum([log(self.likelihood(weights, c=c, d=d)) for (d,c) in data])
+        ll = sum([log(self.likelihood(weights, c=c, d=d)) for (d,c) in data])
+        print "ll:", ll
+        return ll
 
     def empirical_count(self, f, data):
-        return sum([f(c,d) for (d,c) in data])
+        emp = sum([f(c,d) for (d,c) in data])
+        print "empirical:", emp
+        return emp
 
     def predicted_count(self, f, weights, data):
-        return sum([self.likelihood(weights, c, d)*f(c,d) for c in self.classes for (d,_) in data])
+        pred = sum([self.likelihood(weights, c, d)*f(c,d) for c in self.classes for (d,_) in data])
+        print "predicted:", pred
+        return pred
 
     def gradient(self, weights, data):
-        return [self.empirical_count(f, data) - self.predicted_count(f, weights, data) for f in self.features]
+        grad = [self.empirical_count(f, data) - self.predicted_count(f, weights, data) for f in self.features]
+        print grad
+        return grad
 
     def train(self, data):
         func = lambda weights: -1*self.log_likelihood(weights, data)
