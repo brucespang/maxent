@@ -1,7 +1,6 @@
-from scipy.optimize import minimize
-from math import log,exp
 import operator
-import numpy
+import cmaxent
+import gc
 
 def memoize(f):
     cache = {}
@@ -13,10 +12,6 @@ def memoize(f):
             cache[args] = res
             return res
     return func
-
-def trace(x):
-    print x
-    return x
 
 class MaxEnt:
     def create_feature(self, k, r):
@@ -30,50 +25,13 @@ class MaxEnt:
         self.weights = [0]*len(features)
         self.features = [memoize(f) for f in features]
 
-    def feature_sum(self, weights, c, d):
-        return sum([w*f(c,d) for (f,w) in zip(self.features, weights)])
-
-    def likelihood(self, weights, c, d):
-        actuals = exp(self.feature_sum(weights, c, d))
-        print "actuals:", actuals
-        expecteds = sum([exp(self.feature_sum(weights, c=k, d=d)) for k in self.classes])
-        print "expecteds:", expecteds
-        l = float(actuals)/float(expecteds)
-        print "likelihood:", l
-        return l
-
-    def log_likelihood(self, weights, data):
-        ll = sum([log(self.likelihood(weights, c=c, d=d)) for (d,c) in data])
-        print "ll:", ll
-        return ll
-
-    def empirical_count(self, f, data):
-        emp = sum([f(c,d) for (d,c) in data])
-        print "empirical:", emp
-        return emp
-
-    def predicted_count(self, f, weights, data):
-        pred = sum([self.likelihood(weights, c, d)*f(c,d) for c in self.classes for (d,_) in data])
-        print "predicted:", pred
-        return pred
-
-    def gradient(self, weights, data):
-        grad = [self.empirical_count(f, data) - self.predicted_count(f, weights, data) for f in self.features]
-        print grad
-        return grad
-
     def train(self, data):
-        func = lambda weights: -1*self.log_likelihood(weights, data)
-        gradient = lambda weights: numpy.array([-1*x for x in self.gradient(weights, data)])
-
-        result = minimize(fun=func, jac=gradient, x0=self.weights,
-                          method="BFGS", options={"disp": True})
-        print result.x
-        self.weights = result.x
+        self.weights = cmaxent.train(self, data)
         print self.weights
 
     def predict(self, data):
-        probs = {c:self.likelihood(self.weights, c, data) for c in self.classes}
+        probs = {c:cmaxent.likelihood(self, (c, data)) for c in self.classes}
+        # print probs
         return max(probs.items(), key=operator.itemgetter(1))[0]
 
 if __name__ == "__main__":
