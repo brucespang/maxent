@@ -1,20 +1,12 @@
 from maxent import MaxEnt
 from nltk.corpus import names
 import string
+import pickle
 import random
 
 class Gender:
-    def letter_vowel(self, l):
-        return l in ['a', 'e', 'i', 'o', 'u']
-
-    def char_vowel(self, n):
-        return lambda word: self.letter_vowel(word[n])
-
     def char_is(self, n, char):
-        return lambda word: word[n] == char
-
-    def length_above(self, n):
-        return lambda word: len(word) > n
+        return lambda word: n < len(word) and word[n] == char
 
     def length(self, word):
         return len(word)
@@ -22,15 +14,26 @@ class Gender:
     def char_in(self, char):
         return lambda word: char in word
 
+    def letter_vowel(self, char):
+        return char in ['a', 'e', 'i', 'o', 'u', 'y']
+
+    def num_vowels(self, word):
+        return len([c for c in word if self.letter_vowel(c)])
+
+    def num_consonants(self, word):
+        return len(word) - self.num_vowels(word)
+
+    def vowel_ratio(self, word):
+        return self.num_vowels(word)/float(len(word))
+
     def __init__(self):
-        relations = [self.char_vowel(-1),
-                     self.char_vowel(-2),
-                     self.char_vowel(0),
-                     self.char_vowel(1),
-                     self.length,
-                     self.length_above(4)]
-        # for c in string.ascii_lowercase:
-        #     relations.append(self.char_in(c))
+        relations = [self.length,
+                     self.num_vowels,
+                     self.num_consonants,
+                     self.vowel_ratio]
+        for i in range(0, 10):
+            for c in string.ascii_lowercase:
+                relations.append(self.char_is(i, c))
         self.classifier = MaxEnt(classes=["male", "female"],
                                  relations=relations)
     def train(self, names):
@@ -39,14 +42,20 @@ class Gender:
     def guess(self, word):
         return self.classifier.predict(word)
 
-if __name__ == "__main__":
-    gender = Gender()
-    names = ([('male', name) for name in names.words('male.txt')] +
-             [('female', name) for name in names.words('female.txt')])
-    random.shuffle(names)
-    train_set, test_set = names[500:1000], names[:500]
+names = ([('male', name) for name in names.words('male.txt')] +
+         [('female', name) for name in names.words('female.txt')])
+rand = random.Random(1)
+rand.shuffle(names)
+train_set, test_set = names[500:], names[:500]
+gender = Gender()
+try:
+    weights = pickle.load(open("gender.pickle"))
+    gender.classifier.weights = weights
+except IOError:
     gender.train(train_set)
+    pickle.dump(gender.classifier.weights, open("gender.pickle", 'w'))
 
+if __name__ == "__main__":
     num_correct = 0
     for (g, name) in test_set:
         guess = gender.guess(name)
