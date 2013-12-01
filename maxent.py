@@ -15,7 +15,6 @@ class MaxEnt:
     def predict(self, data):
         scores = cmaxent.likelihood(self, data)
         class_scores = zip(self.classes, scores)
-        print "class scores: ", class_scores
         return max(class_scores, key=operator.itemgetter(1))[0]
 
 def f(args):

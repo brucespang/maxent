@@ -33,9 +33,9 @@ class Gender:
                     self.num_vowels,
                     self.num_consonants,
                     self.vowel_ratio]
-        # for i in range(0, 1):
-        for c in self.vowels:
-            features.append(self.char_is(-1, c))
+        for i in range(0, 15):
+            for c in string.ascii_lowercase:
+                features.append(self.char_is(i, c))
         self.classifier = MaxEnt(classes=["male", "female"],
                                  features=features)
     def train(self, names):
@@ -48,7 +48,7 @@ names = ([('male', name) for name in names.words('male.txt')] +
          [('female', name) for name in names.words('female.txt')])
 rand = random.Random(1)
 rand.shuffle(names)
-train_set, test_set = names[100:], names[:10]
+train_set, test_set = names[100:], names[:100]
 gender = Gender()
 # try:
 #     weights = pickle.load(open("gender.pickle"))

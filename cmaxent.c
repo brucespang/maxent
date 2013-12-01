@@ -5,7 +5,6 @@
 #include <math.h>
 
 #define NUM_ITERATIONS 100
-#define DEBUG
 
 typedef struct {
   PyObject** features;
@@ -99,17 +98,18 @@ static void gsl_matrix_map(gsl_matrix* X, double (*f)(double)) {
   }
 }
 
-static void gsl_vector_map(gsl_vector* x, double (*f)(double)) {
+static inline void gsl_vector_map(gsl_vector* x, double (*f)(double)) {
   for (uint32_t i = 0; i < gsl_vector_size(x); i++) {
     gsl_vector_set(x, i, f(gsl_vector_get(x, i)));
   }
 }
 
+// add up all the values in each column in X
 // TODO: vectorize
 gsl_vector* gsl_matrix_sum(gsl_matrix* X) {
   gsl_vector* res = gsl_vector_alloc(gsl_matrix_num_cols(X));
   for (uint32_t i = 0; i < gsl_matrix_num_cols(X); i++) {
-    uint32_t sum = 0;
+    double sum = 0;
     for (uint32_t j = 0; j < gsl_matrix_num_rows(X); j++) {
       sum += gsl_matrix_get(X, j, i);
     }
@@ -194,8 +194,12 @@ static void fdf(const gsl_vector* weights_vector, void* params,
     // Function value: sum of log probabilities
     // TODO: vectorize
     double res = 0;
-    for (uint32_t i = 0; i < gsl_matrix_num_cols(scores); i++) {
+    for (uint32_t i = 0; i < ps->labels->size; i++) {
       res += gsl_matrix_get(scores, gsl_vector_get(ps->labels, i), i);
+#ifdef DEBUG
+      printf("scores(%f, %d) = %f\n", gsl_vector_get(ps->labels, i), i,
+        gsl_matrix_get(scores, gsl_vector_get(ps->labels, i), i));
+#endif
     }
 
     // we're using a minimization library.
@@ -219,10 +223,6 @@ static void fdf(const gsl_vector* weights_vector, void* params,
     gsl_matrix* tmp = gsl_matrix_alloc(scores->size2, scores->size1);
     gsl_matrix_transpose_memcpy(tmp, scores);
     gsl_matrix* grad = gsl_matrix_mul(data, tmp);
-    // G' = G_empirical - G, but in order to save memory
-    // we can compute -1*(G - G_empirical) instead.
-    // because we're using a minimization library, we'd then multiply by -1:
-    // -1*-1*(G - G_empirical) = G - G_empirical.
     gsl_matrix_transpose_memcpy(&G, grad);
 
 #ifdef DEBUG
@@ -232,7 +232,10 @@ static void fdf(const gsl_vector* weights_vector, void* params,
     gsl_matrix_dump(&G);
 #endif
 
-
+    // G' = G_empirical - G, but in order to save memory
+    // we can compute -1*(G - G_empirical) instead.
+    // because we're using a minimization library, we'd then multiply by -1:
+    // -1*-1*(G - G_empirical) = G - G_empirical.
     gsl_matrix_sub(&G, ps->G_empirical);
 
 #ifdef DEBUG
