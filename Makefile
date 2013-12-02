@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS += -I/usr/include/python2.7 -I/usr/local/include/gsl -g -Wall -Wextra -Werror -fPIC
+CFLAGS += -I/usr/include/python2.7 -I/usr/local/include/gsl -g -Wall -Wextra -Werror -fPIC -O3
 LDFLAGS += -lpython2.7 -lgsl -lgslcblas
 
 all: cmaxent.so run
@@ -16,7 +16,8 @@ cmaxent.so: $(objects)
 
 run: cmaxent.so
 	time python maxent.py
-	# time python gender.py
+	time python gender.py
 
 clean:
 	rm cmaxent.so
+	rm cmaxent.o
