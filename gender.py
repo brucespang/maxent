@@ -1,5 +1,5 @@
 from maxent import MaxEnt
-from nltk.corpus import names
+from nltk.corpus import names, gutenberg
 import string
 import pickle
 import random
@@ -28,27 +28,56 @@ class Gender:
     def vowel_ratio(self, word):
         return self.num_vowels(word)/float(len(word))
 
+    def is_vowel(self, n):
+        return lambda word: n < len(word) and word[n] in self.vowels
+
+    def contains(self, c):
+        return lambda word: c in word.lower()
+
+    def is_capital(self, n):
+        return lambda word: n < len(word) and word[n].isupper()
+
     def __init__(self):
         features = [self.length,
                     self.num_vowels,
                     self.num_consonants,
-                    self.vowel_ratio]
+                    self.vowel_ratio,
+                    self.is_capital(0)]
+
+        for c1 in string.ascii_lowercase:
+            features.append(self.contains(c1))
+            for c2 in string.ascii_lowercase:
+                features.append(self.contains(c1 + c2))
+
         for i in range(0, 15):
             for c in string.ascii_lowercase:
                 features.append(self.char_is(i, c))
-        self.classifier = MaxEnt(classes=["male", "female"],
+            features.append(self.is_vowel(i))
+
+        self.classifier = MaxEnt(classes=["male", "female", "other"],
                                  features=features)
     def train(self, names):
         return self.classifier.train(names)
 
     def guess(self, word):
-        return self.classifier.predict(word)
+        if word in ['she', 'her']:
+            return 'female'
+        elif word in ['he', 'him']:
+            return 'male'
+        else:
+            return self.classifier.predict(word)
 
 names = ([('male', name) for name in names.words('male.txt')] +
          [('female', name) for name in names.words('female.txt')])
+names_set = set(names)
+non_names = [('other', w) for w in gutenberg.words('austen-emma.txt') if w not in names_set and w not in ['she', 'her', 'he', 'him']]
+
+words = names + non_names[:5000]
+
 rand = random.Random(1)
-rand.shuffle(names)
-train_set, test_set = names[100:], names[:100]
+# rand = random.Random()
+rand.shuffle(words)
+train_set, test_set = words[500:], words[:500]
 gender = Gender()
 # try:
 #     weights = pickle.load(open("gender.pickle"))
@@ -59,10 +88,11 @@ gender.train(train_set)
 
 if __name__ == "__main__":
     num_correct = 0
-    for (g, name) in test_set:
-        guess = gender.guess(name)
-        print {"name": name, "guess": guess, "actual": g}
+    for (g, w) in test_set:
+        guess = gender.guess(w)
         if guess == g:
             num_correct += 1
+        else:
+            print {"word": w, "guess": guess, "actual": g}
     print "num correct: ", num_correct
     print "accuracy: ", float(num_correct)/float(len(test_set))
