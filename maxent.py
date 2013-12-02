@@ -10,7 +10,6 @@ class MaxEnt:
 
     def train(self, data):
         self.weights = cmaxent.train(self, data)
-        print "weights:", self.weights
 
     def predict(self, data):
         scores = cmaxent.likelihood(self, data)
@@ -31,6 +30,7 @@ if __name__ == "__main__":
 
     maxent = MaxEnt(classes=["s", "h", "n"], features=features)
     maxent.train([("s", "s")] + [("h", "h")] + [("n", "n")])
+    print "weights: ", maxent.weights
     print "s", maxent.predict("s")
     print "h", maxent.predict("h")
     print "n", maxent.predict("n")
