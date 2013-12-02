@@ -163,31 +163,12 @@ static void fdf(const gsl_vector* weights_vector, void* params,
 
   gsl_matrix* data = ps->data;
 
-#ifdef DEBUG
-  printf("\nfdf\n");
-
-  printf("weights:\n");
-  gsl_matrix_dump(&weights);
-  printf("data:\n");
-  gsl_matrix_dump(data);
-#endif
-
   // matrix of scores for input data: rows are classes, columns are data,
   // value is f(d)
   gsl_matrix* scores = gsl_matrix_mul(&weights, data);
 
-#ifdef DEBUG
-  printf("scores:\n");
-  gsl_matrix_dump(scores);
-#endif
-
   // scores = Normalized log probability (LxN)
   log_normalize(scores);
-
-#ifdef DEBUG
-  printf("normalized:\n");
-  gsl_matrix_dump(scores);
-#endif
 
   // straight up horrible hack because GSL won't let us not define a func/gradient
   if (ps->calc_func_value) {
@@ -196,19 +177,11 @@ static void fdf(const gsl_vector* weights_vector, void* params,
     double res = 0;
     for (uint32_t i = 0; i < ps->labels->size; i++) {
       res += gsl_matrix_get(scores, gsl_vector_get(ps->labels, i), i);
-#ifdef DEBUG
-      printf("scores(%f, %d) = %f\n", gsl_vector_get(ps->labels, i), i,
-        gsl_matrix_get(scores, gsl_vector_get(ps->labels, i), i));
-#endif
     }
 
     // we're using a minimization library.
     res *= -1;
     *f = res;
-
-#ifdef DEBUG
-    printf("f(x) = %f\n", *f);
-#endif
   }
 
   if (ps->calc_grad_value) {
@@ -225,32 +198,19 @@ static void fdf(const gsl_vector* weights_vector, void* params,
     gsl_matrix* grad = gsl_matrix_mul(data, tmp);
     gsl_matrix_transpose_memcpy(&G, grad);
 
-#ifdef DEBUG
-    printf("empirical count:\n");
-    gsl_matrix_dump(ps->G_empirical);
-    printf("predicted count:\n");
-    gsl_matrix_dump(&G);
-#endif
-
     // G' = G_empirical - G, but in order to save memory
     // we can compute -1*(G - G_empirical) instead.
     // because we're using a minimization library, we'd then multiply by -1:
     // -1*-1*(G - G_empirical) = G - G_empirical.
     gsl_matrix_sub(&G, ps->G_empirical);
 
-#ifdef DEBUG
-    printf("gradient:\n");
-    gsl_matrix_dump(&G);
-#endif
-
     gsl_matrix_free(grad);
     gsl_matrix_free(tmp);
+
   }
 
+  gsl_matrix_free(scores);
   gsl_vector_free(weights_copy);
-#ifdef DEBUG
-  printf("\n");
-#endif
 }
 
 static double func(const gsl_vector* weights, void* params) {

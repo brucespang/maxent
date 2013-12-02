@@ -2,8 +2,8 @@
 #define CMAXENT_H_
 
 #include <Python.h>
-#include <ck_hs.h>
-#include "murmurhash.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 PyObject* py_likelihood(PyObject* self, PyObject* args);
 PyObject* py_train(PyObject* self, PyObject* args);
