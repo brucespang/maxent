@@ -8,7 +8,7 @@ class Gender:
     vowels = ['a', 'e', 'i', 'o', 'u', 'y']
 
     def char_is(self, n, char):
-        return lambda word: n < len(word) and word[n] == char
+        return lambda word: abs(n) < len(word) and word[n] == char
 
     def length(self, word):
         return len(word)
@@ -29,13 +29,13 @@ class Gender:
         return self.num_vowels(word)/float(len(word))
 
     def is_vowel(self, n):
-        return lambda word: n < len(word) and word[n] in self.vowels
+        return lambda word: abs(n) < len(word) and word[n] in self.vowels
 
     def contains(self, c):
         return lambda word: c in word.lower()
 
     def is_capital(self, n):
-        return lambda word: n < len(word) and word[n].isupper()
+        return lambda word: abs(n) < len(word) and word[n].isupper()
 
     def __init__(self):
         features = [self.length,
@@ -53,6 +53,11 @@ class Gender:
             for c in string.ascii_lowercase:
                 features.append(self.char_is(i, c))
             features.append(self.is_vowel(i))
+
+        for i in range(1, 5):
+            for c in string.ascii_lowercase:
+                features.append(self.char_is(-1*i, c))
+            features.append(self.is_vowel(-1*i))
 
         self.classifier = MaxEnt(classes=["male", "female", "other"],
                                  features=features)
