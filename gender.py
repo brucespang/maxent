@@ -79,12 +79,12 @@ rand = random.Random(1)
 rand.shuffle(words)
 train_set, test_set = words[500:], words[:500]
 gender = Gender()
-# try:
-#     weights = pickle.load(open("gender.pickle"))
-#     gender.classifier.weights = weights
-# except IOError:
-gender.train(train_set)
-# pickle.dump(gender.classifier.weights, open("gender.pickle", 'w'))
+try:
+    weights = pickle.load(open("gender.pickle"))
+    gender.classifier.weights = weights
+except IOError:
+    gender.train(train_set)
+    pickle.dump(gender.classifier.weights, open("gender.pickle", 'w'))
 
 if __name__ == "__main__":
     num_correct = 0
